@@ -1,48 +1,37 @@
 """
 VolumeHandControl.py
 Lógica de mapeo distancia-volumen y control del volumen del sistema (Windows).
-Usa pycaw para acceder a la API de audio de Windows.
+
+Usa la API moderna de pycaw (>= 0.5): AudioDevice.EndpointVolume
+en lugar del método Activate (eliminado en versiones recientes).
 """
-import math
 import numpy as np
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 
 class VolumeController:
     """
     Controla el volumen del sistema Windows mediante pycaw.
-    
+
     Mapea la distancia entre dedos (píxeles) al rango de volumen del
-    dispositivo de audio (dB) y expone métodos simples para obtener/
-    fijar el volumen como porcentaje (0.0 – 1.0).
+    dispositivo de audio y expone métodos simples para obtener/fijar
+    el volumen como fracción 0.0–1.0.
     """
 
     def __init__(self, min_dist: float = 30, max_dist: float = 220):
-        """
-        Parámetros
-        ----------
-        min_dist : float
-            Distancia mínima en píxeles → volumen 0%.
-        max_dist : float
-            Distancia máxima en píxeles → volumen 100%.
-        """
         self.min_dist = min_dist
         self.max_dist = max_dist
 
-        # Inicializar interfaz pycaw
-        devices = AudioUtilities.GetSpeakers()
-        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        self._volume = cast(interface, POINTER(IAudioEndpointVolume))
+        # API moderna: AudioDevice expone .EndpointVolume directamente
+        speakers = AudioUtilities.GetSpeakers()
+        self._volume = speakers.EndpointVolume   # POINTER(IAudioEndpointVolume)
 
-        # Rango de dB del dispositivo
         vol_range = self._volume.GetVolumeRange()
         self._min_vol_db: float = vol_range[0]
         self._max_vol_db: float = vol_range[1]
 
     # ------------------------------------------------------------------ #
-    #  Propiedades públicas                                                #
+    #  Propiedades                                                         #
     # ------------------------------------------------------------------ #
 
     @property
@@ -56,45 +45,26 @@ class VolumeController:
         return int(self.current_volume * 100)
 
     # ------------------------------------------------------------------ #
-    #  Control del volumen                                                 #
+    #  Control                                                             #
     # ------------------------------------------------------------------ #
 
     def set_volume(self, level: float):
         """
         Fija el volumen del sistema.
-        
+
         Parámetros
         ----------
-        level : float
-            Valor entre 0.0 (silencio) y 1.0 (máximo).
+        level : float  Valor entre 0.0 (silencio) y 1.0 (máximo).
         """
         level = max(0.0, min(1.0, level))
         self._volume.SetMasterVolumeLevelScalar(level, None)
 
     def distance_to_volume(self, distance: float) -> float:
-        """
-        Convierte la distancia entre dedos en un nivel de volumen (0.0–1.0).
-
-        Parámetros
-        ----------
-        distance : float
-            Distancia en píxeles entre pulgar e índice.
-
-        Devuelve
-        -------
-        float : nivel de volumen 0.0–1.0
-        """
-        vol = np.interp(distance, [self.min_dist, self.max_dist], [0.0, 1.0])
-        return float(vol)
+        """Convierte distancia en píxeles a nivel de volumen 0.0–1.0."""
+        return float(np.interp(distance, [self.min_dist, self.max_dist], [0.0, 1.0]))
 
     def apply_from_distance(self, distance: float) -> float:
-        """
-        Calcula el volumen a partir de la distancia y lo aplica al sistema.
-
-        Devuelve
-        -------
-        float : nuevo nivel de volumen aplicado (0.0–1.0).
-        """
+        """Aplica al sistema el volumen calculado desde la distancia. Devuelve el nivel."""
         new_vol = self.distance_to_volume(distance)
         self.set_volume(new_vol)
         return new_vol

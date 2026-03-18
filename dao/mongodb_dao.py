@@ -7,7 +7,7 @@ import threading
 from datetime import datetime
 
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, ConfigurationError
 
 from config.settings import MONGODB_URI, DATABASE_NAME
 from models.session import Session
@@ -56,8 +56,8 @@ class MongoDBDAO:
             self._db = self._client[DATABASE_NAME]
             self._connected = True
             print(f"[DAO] Conectado a MongoDB: {DATABASE_NAME}")
-        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-            print(f"[DAO] Error de conexión: {e}")
+        except (ConnectionFailure, ServerSelectionTimeoutError, ConfigurationError, Exception) as e:
+            print(f"[DAO] Error de conexión (BD desactivada): {type(e).__name__}: {e}")
             self._connected = False
 
     @property

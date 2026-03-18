@@ -3,10 +3,12 @@ config/settings.py
 Carga la configuración desde el archivo .env usando python-dotenv.
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Cargar variables del archivo .env
-load_dotenv()
+# Ruta absoluta al archivo .env (subiendo de config/ a la raíz)
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 MONGODB_URI = os.getenv("MONGODB_URI", "")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "hand_tracking_db")

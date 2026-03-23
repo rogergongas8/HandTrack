@@ -139,7 +139,10 @@ def main():
     # ── Sesión en MongoDB ───────────────────────
     session = Session()
     session_id = dao.save_session(session)
-    print(f"[MAIN] Sesión iniciada | ID: {session_id}")
+    if session_id is None:
+        print("[MAIN] ADVERTENCIA: No se pudo guardar la sesión inicial. Los datos NO se enviarán a MongoDB.")
+    else:
+        print(f"[MAIN] Sesión iniciada | ID: {session_id}")
 
     # ── Cámara ──────────────────────────────────
     cap = cv2.VideoCapture(CAMERA_INDEX)

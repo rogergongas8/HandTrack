@@ -58,6 +58,7 @@ class MongoDBDAO:
             print(f"[DAO] Conectado a MongoDB: {DATABASE_NAME}")
         except (ConnectionFailure, ServerSelectionTimeoutError, ConfigurationError, Exception) as e:
             print(f"[DAO] Error de conexión (BD desactivada): {type(e).__name__}: {e}")
+            print("[DAO] CONSEJO: Verifica que tu IP esté en la lista blanca de MongoDB Atlas y que el URI sea correcto.")
             self._connected = False
 
     @property
@@ -74,6 +75,7 @@ class MongoDBDAO:
         Devuelve el inserted_id o None si falla.
         """
         if not self._connected:
+            print("[DAO] Error: No se puede guardar sesión. La base de datos no está conectada.")
             return None
         try:
             result = self._db["sessions"].insert_one(session.to_dict())
@@ -110,6 +112,7 @@ class MongoDBDAO:
         Inserta un evento de volumen en la colección 'volume_events'.
         """
         if not self._connected:
+            print("[DAO] Error: No se puede guardar evento. La base de datos no está conectada.")
             return None
         try:
             result = self._db["volume_events"].insert_one(event.to_dict())
